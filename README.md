@@ -1,5 +1,7 @@
 # ARVELOOM · ONICS 공개 준비
 
+ONICS의 정식 명칭은 Our Next Intellectual Civilization System이다.
+
 ARVELOOM은 ONICS 프로젝트의 글·연구 노트·해설을 공개하고 독자의 문의·의견을 받는 공간이다. GitHub Pages로 제공하는 정적 사이트다. 원고는 대시보드에서 준비하고 검토한 글 데이터를 이 저장소에 반영한다. 배포 전 변경 내용과 복구 지점을 확인한다.
 
 ## 현재 상태
