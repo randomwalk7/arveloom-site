@@ -1,10 +1,38 @@
-const topics=['문명사','금융','부동산','달리기','웨이트트레이닝','독서','AI'];
+import {siteTopics,validatePublicArticles,visibleArticles,articleIdFromHash} from './article-model.js';
 const english=['CIVILIZATION','FINANCE','REAL ESTATE','RUNNING','TRAINING','BOOKS','TECHNOLOGY'];
-// 구조 확인용 데이터입니다. 실제 공개 글이 아니며 날짜·조회수를 만들지 않습니다.
-const samples=[['금융','금리란 무엇이며, 내 생활과 어떻게 연결될까?','첫 글이 놓일 자리입니다. 정의에서 생활 속 사례까지 단계적으로 읽는 구조를 확인하세요.'],['문명사','문명과 경제의 변화를 읽는 이야기','역사적 배경과 오늘의 연결을 담을 글 자리입니다.'],['독서','한 권의 책에서 시작된 질문','책 소개, 독후감과 서평을 모을 자리입니다.'],['부동산','공간과 자금의 흐름을 이해하기','개발·자금조달·실물 부동산 글을 담을 자리입니다.'],['달리기','달리는 일상을 기록하기','마라톤 준비와 달리기의 경험을 담을 자리입니다.'],['웨이트트레이닝','오래 지속할 수 있는 훈련','훈련과 몸 관리에 관한 글을 담을 자리입니다.'],['AI','기술의 변화와 생활의 접점','AI를 이해하고 활용하는 글을 담을 자리입니다.']];
-let selected='전체';const search=document.querySelector('#search');const dialog=document.querySelector('#article');
+const search=document.querySelector('#search'),dialog=document.querySelector('#article'),results=document.querySelector('#results');
+let selected='전체',articles=[],loadError='',loaded=false;
+function element(tag,text,className){const node=document.createElement(tag);if(text !== undefined)node.textContent=text;if(className)node.className=className;return node;}
 function choose(topic){selected=topic;render();document.querySelector('#articles').scrollIntoView({behavior:'smooth'});}
-topics.forEach((topic,i)=>{const button=document.createElement('button');button.className='topic';button.innerHTML=`<span>${String(i+1).padStart(2,'0')} / ${english[i]}</span><strong>${topic} ↗</strong>`;button.onclick=()=>choose(topic);document.querySelector('#topic-grid').append(button);});
-function render(){const filters=document.querySelector('#filters');filters.replaceChildren();['전체',...topics].forEach(topic=>{const b=document.createElement('button');b.textContent=topic;b.setAttribute('aria-pressed',String(selected===topic));b.onclick=()=>{selected=topic;render();};filters.append(b);});const results=document.querySelector('#results');results.replaceChildren();const found=samples.filter(row=>(selected==='전체'||row[0]===selected)&&row.join(' ').toLowerCase().includes(search.value.trim().toLowerCase()));for(const [category,title,summary] of found){const card=document.createElement('article');card.className='card';const index=samples.findIndex(row=>row[1]===title)+1;card.innerHTML=`<div class="number" aria-hidden="true">${String(index).padStart(2,'0')}.</div><span class="tag">${category} · 글 자리 미리보기</span><h3>${title}</h3><p>${summary}</p><button>글 화면 미리보기 ↗</button>`;card.querySelector('button').onclick=()=>openArticle(category,title);results.append(card);}if(!found.length){const p=document.createElement('p');p.textContent='해당하는 글 자리가 없습니다. 다른 검색어나 분야를 선택해 주세요.';results.append(p);}}
-function openArticle(category,title){document.querySelector('#article-body').innerHTML=`<p class="eyebrow">${category} / ARTICLE PREVIEW</p><h1>${title}</h1><p class="muted">구조 미리보기 · 미발행 · 작성일과 수정일은 공개할 때 표시됩니다.</p><div class="placeholder">한눈에 보는 요약이 들어갈 자리입니다.</div><h2>들어가며</h2><p class="placeholder">독자의 질문과 글의 출발점을 담습니다.</p><h2>배경과 핵심 개념</h2><p class="placeholder">본문, 이미지, 설명과 사례가 들어갑니다.</p><h2>내 생활과의 연결</h2><p class="placeholder">독자에게 어떤 의미가 있는지 정리합니다.</p><h2>마무리와 다음 질문</h2><p class="placeholder">핵심 정리와 이어 읽을 글을 배치합니다.</p><h2>참고 자료</h2><p class="placeholder">출처 링크와 확인일을 기록할 자리입니다.</p><hr><p class="muted">작성자 소개 · 관련 글 영역</p>`;dialog.showModal();dialog.scrollTop=0;}
-document.querySelector('#close').onclick=()=>dialog.close();search.addEventListener('input',render);render();
+siteTopics.forEach((topic,i)=>{const button=element('button',undefined,'topic');button.append(element('span',`${String(i+1).padStart(2,'0')} / ${english[i]}`),element('strong',`${topic} ↗`));button.onclick=()=>choose(topic);document.querySelector('#topic-grid').append(button);});
+function openArticle(id){history.pushState({arveloomArticle:true},'',`#article/${encodeURIComponent(id)}`);renderRoute();}
+function render(){
+ const filters=document.querySelector('#filters');filters.replaceChildren();['전체',...siteTopics].forEach(topic=>{const button=element('button',topic);button.setAttribute('aria-pressed',String(selected===topic));button.onclick=()=>{selected=topic;render();};filters.append(button);});
+ document.querySelector('#published-count').textContent=String(articles.filter(x=>x.status==='published').length);
+ results.replaceChildren();
+ if(!loaded || loadError){const status=element('p',loadError || '글 목록을 불러오는 중입니다.','site-message');if(loadError){status.setAttribute('role','alert');const retry=element('button','다시 불러오기');retry.onclick=()=>void loadArticles();status.append(document.createElement('br'),retry);}results.append(status);}else{
+  const found=visibleArticles(articles,selected,search.value);
+  found.forEach((row,index)=>{const card=element('article',undefined,'card');const button=element('button','글 읽기 ↗');button.onclick=()=>openArticle(row.id);card.append(element('div',`${String(index+1).padStart(2,'0')}.`,'number'),element('span',`${row.category} · ${row.kind}`,'tag'),element('h3',row.title),element('p',row.summary),button);results.append(card);});
+  if(!found.length)results.append(element('p',articles.some(x=>x.status==='published') ? '조건에 맞는 글이 없습니다. 다른 분야나 검색어를 선택해 주세요.' : '아직 공개한 글이 없습니다. 첫 원고를 준비하고 있습니다.','site-message'));
+ }
+ const draftList=document.querySelector('#draft-list');draftList.replaceChildren();
+ articles.filter(x=>x.status==='draft').forEach(row=>{const card=element('div',undefined,'draft-row'),description=element('div'),button=element('button','준비 상태 보기 ↗');description.append(element('h4',row.title),element('small',`${row.kind} · 임시 제목 · 원고 준비 중`));button.onclick=()=>openArticle(row.id);card.append(description,button);draftList.append(card);});
+ document.querySelector('.drafts').hidden=!articles.some(x=>x.status==='draft');
+}
+function renderRoute(){
+ const id=articleIdFromHash(location.hash);
+ if(!id){if(dialog.open)dialog.close();return;}
+ if(!loaded)return;
+ const row=articles.find(x=>x.id===id),body=document.querySelector('#article-body');body.replaceChildren();
+ if(!row){body.append(element('h1','글을 찾을 수 없습니다.'),element('p','목록으로 돌아가 다른 글을 선택해 주세요.'));}
+ else{
+  body.append(element('p',`${row.category} / ${row.kind}`,'eyebrow'),element('h1',row.title));
+  if(row.status==='draft')body.append(element('p','임시 제목 · 미발행','muted'),element('p','본문과 출처를 준비하고 있습니다. 현재는 제목과 준비 상태만 안내합니다.','placeholder'));
+  else{body.append(element('p',`공개 ${row.publishedAt}`,'muted'),element('p',row.summary));row.sections.forEach(section=>body.append(element('h2',section.heading),element('p',section.text)));if(row.sources.length){body.append(element('h2','참고 자료'));const list=element('ul');row.sources.forEach(source=>{const item=element('li'),link=element('a',source.title);link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';item.append(link);list.append(item);});body.append(list);}}
+  const contact=element('a','이 글에 관한 문의·의견 보내기 ↗');contact.href=`mailto:orbitalrandomness@gmail.com?subject=${encodeURIComponent(`ONICS 의견: ${row.title}`)}`;body.append(document.createElement('hr'),contact);
+ }
+ if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
+}
+function closeArticle(){if(history.state?.arveloomArticle)history.back();else{history.replaceState(null,'','#articles');dialog.close();}}
+async function loadArticles(){loaded=false;loadError='';render();try{const response=await fetch('./articles.json',{cache:'no-cache'});if(!response.ok)throw new Error();articles=validatePublicArticles(await response.json());loaded=true;render();renderRoute();}catch{loaded=true;loadError='글 목록을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.';render();}}
+document.querySelector('#close').onclick=closeArticle;dialog.addEventListener('cancel',event=>{event.preventDefault();closeArticle();});search.addEventListener('input',render);window.addEventListener('hashchange',renderRoute);window.addEventListener('popstate',renderRoute);void loadArticles();

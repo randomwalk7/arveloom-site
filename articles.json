@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "articles": [
+    {
+      "id": "interest-civilization-thermometer",
+      "title": "금리는 문명의 체온계",
+      "kind": "글",
+      "category": "금융",
+      "status": "draft",
+      "summary": "",
+      "publishedAt": null,
+      "sections": [],
+      "sources": []
+    }
+  ]
+}
