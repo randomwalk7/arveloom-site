@@ -29,7 +29,7 @@ function renderRoute(){
   body.append(element('p',`${row.category} / ${row.kind}`,'eyebrow'),element('h1',row.title));
   if(row.status==='draft')body.append(element('p','임시 제목 · 미발행','muted'),element('p','본문과 출처를 준비하고 있습니다. 현재는 제목과 준비 상태만 안내합니다.','placeholder'));
   else{body.append(element('p',`공개 ${row.publishedAt}`,'muted'),element('p',row.summary));row.sections.forEach(section=>body.append(element('h2',section.heading),element('p',section.text)));if(row.sources.length){body.append(element('h2','참고 자료'));const list=element('ul');row.sources.forEach(source=>{const item=element('li'),link=element('a',source.title);link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';item.append(link);list.append(item);});body.append(list);}}
-  const contact=element('a','이 글에 관한 문의·의견 보내기 ↗');contact.href=`mailto:orbitalrandomness@gmail.com?subject=${encodeURIComponent(`ONICS 의견: ${row.title}`)}`;body.append(document.createElement('hr'),contact);
+  const contact=element('a','이 글에 관한 문의·의견 보내기 ↗');contact.href=`mailto:contact@arveloom.com?subject=${encodeURIComponent(`ONICS 의견: ${row.title}`)}`;body.append(document.createElement('hr'),contact);
  }
  if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
 }

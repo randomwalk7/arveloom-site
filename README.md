@@ -5,7 +5,7 @@ ARVELOOM은 ONICS 프로젝트의 글·연구 노트·해설을 공개하고 독
 ## 현재 상태
 
 - 첫 글 임시 제목: 금리는 문명의 체온계
-- 문의 주소: orbitalrandomness@gmail.com
+- 문의 주소: contact@arveloom.com
 - 첫 글 본문·출처·공개일은 준비 전이다. articles.json에 draft로만 등록한다.
 - noindex를 유지한다. 실제 원고와 공개 검토가 끝난 뒤 검색 노출을 결정한다.
 - 브랜드화와 결제·매출 기능은 후속 검토 범위다.
