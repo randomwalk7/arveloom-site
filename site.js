@@ -3,6 +3,27 @@ const english=['CIVILIZATION','FINANCE','REAL ESTATE','RUNNING','TRAINING','BOOK
 const search=document.querySelector('#search'),dialog=document.querySelector('#article'),results=document.querySelector('#results');
 let selected='전체',articles=[],loadError='',loaded=false;
 function element(tag,text,className){const node=document.createElement(tag);if(text !== undefined)node.textContent=text;if(className)node.className=className;return node;}
+
+function appendInline(parent,text){
+ const pattern=/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*([^*]+)\*\*/g;
+ let last=0;
+ for(const match of text.matchAll(pattern)){
+  parent.append(document.createTextNode(text.slice(last,match.index)));
+  if(match[1]){const link=element('a',match[1]);link.href=match[2];link.target='_blank';link.rel='noopener noreferrer';parent.append(link);}
+  else parent.append(element('strong',match[3]));
+  last=match.index+match[0].length;
+ }
+ parent.append(document.createTextNode(text.slice(last)));
+}
+function appendArticleBlock(parent,block){
+ const heading=block.match(/^#{2,6} (.+)\n?([\s\S]*)$/);
+ const image=block.match(/^!\[([^\]]*)\]\((assets\/[a-z0-9-]+\.png)\)$/);
+ if(heading){parent.append(element('h2',heading[1]));if(heading[2].trim())appendArticleBlock(parent,heading[2]);}
+ else if(image){const figure=element('figure'),img=element('img');img.src=image[2];img.alt=image[1];img.loading='lazy';figure.append(img);parent.append(figure);}
+ else if(/^-{3,}$/.test(block.trim()))parent.append(element('hr'));
+ else{const p=element('p');appendInline(p,block);parent.append(p);}
+}
+
 function choose(topic){selected=topic;render();document.querySelector('#articles').scrollIntoView({behavior:'smooth'});}
 siteTopics.forEach((topic,i)=>{const button=element('button',undefined,'topic');button.append(element('span',`${String(i+1).padStart(2,'0')} / ${english[i]}`),element('strong',`${topic} ↗`));button.onclick=()=>choose(topic);document.querySelector('#topic-grid').append(button);});
 function openArticle(id){history.pushState({arveloomArticle:true},'',`#article/${encodeURIComponent(id)}`);renderRoute();}
@@ -28,7 +49,7 @@ function renderRoute(){
  else{
   body.append(element('p',`${row.category} / ${row.kind}`,'eyebrow'),element('h1',row.title));
   if(row.status==='draft')body.append(element('p','임시 제목 · 미발행','muted'),element('p','본문과 출처를 준비하고 있습니다. 현재는 제목과 준비 상태만 안내합니다.','placeholder'));
-  else{body.append(element('p',`공개 ${row.publishedAt}`,'muted'),element('p',row.summary));row.sections.forEach(section=>body.append(element('h2',section.heading),element('p',section.text)));if(row.sources.length){body.append(element('h2','참고 자료'));const list=element('ul');row.sources.forEach(source=>{const item=element('li'),link=element('a',source.title);link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';item.append(link);list.append(item);});body.append(list);}}
+  else{body.append(element('p',`공개 ${row.publishedAt}`,'muted'),element('p',row.summary));if(row.blocks)row.blocks.forEach(block=>appendArticleBlock(body,block));else row.sections.forEach(section=>body.append(element('h2',section.heading),element('p',section.text)));if(row.sources.length){body.append(element('h2','참고 자료'));const list=element('ul');row.sources.forEach(source=>{const item=element('li'),link=element('a',source.title);link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';item.append(link);list.append(item);});body.append(list);}}
   const contact=element('a','이 글에 관한 문의·의견 보내기 ↗');contact.href=`mailto:contact@arveloom.com?subject=${encodeURIComponent(`ONICS 의견: ${row.title}`)}`;body.append(document.createElement('hr'),contact);
  }
  if(!dialog.open)dialog.showModal();dialog.scrollTop=0;
